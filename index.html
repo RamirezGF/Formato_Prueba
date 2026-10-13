@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Formato de Afiliación SINTRAP</title>
+<style>
+  :root { --hint: #9a9a9a; --focus: #e8f1ff; --accent:#c00000; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#d9d9d9; font-family: Montserrat, "Segoe UI", Verdana, Arial, sans-serif; color:#000; }
+
+  /* Barra de herramientas (no se imprime) */
+  #toolbar { position:sticky; top:0; z-index:10; background:#222; color:#fff; padding:10px 16px;
+             display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  #toolbar button { background:#2e7d32; color:#fff; border:0; padding:9px 16px; border-radius:6px; font-size:14px; cursor:pointer; }
+  #toolbar button.sec { background:#555; }
+  #toolbar button:hover { filter:brightness(1.15); }
+  #toolbar span { font-size:13px; opacity:.85; }
+  #toast { margin-left:auto; font-size:13px; color:#9be29b; }
+
+  /* Hoja A4 */
+  .page { width:210mm; min-height:297mm; margin:14px auto; background:#fff; padding:14mm 17mm 12mm 17mm;
+          box-shadow:0 2px 10px rgba(0,0,0,.35); position:relative; font-size:10.5pt; line-height:1.55; }
+
+  /* Cabecera */
+  .head { display:flex; align-items:flex-start; gap:10px; margin-bottom:6px; }
+  .logo { width:84px; height:84px; flex:none; }
+  .head-text { flex:1; text-align:center; }
+  .head-text h1 { margin:0 0 2px; font-size:12pt; font-weight:700; }
+  .head-text p { margin:0; font-size:7.2pt; font-weight:700; font-family:Arial, Helvetica, sans-serif; line-height:1.25; }
+
+  /* Campos editables */
+  input[type=text] { font:inherit; border:0; border-bottom:1px solid #000; background:transparent; padding:0 2px;
+                     outline:none; border-radius:0; text-align:center; color:#000066; }
+  input[type=text]:focus { background:var(--focus); }
+  input[type=text]::placeholder { color:var(--hint); font-size:8pt; font-style:italic; }
+  .w-nombre{width:98mm} .w-dni{width:44mm} .w-cod{width:44mm} .w-tel{width:50mm}
+  .w-lugar{width:26mm} .w-dia{width:11mm} .w-mes{width:34mm} .w-anio{width:11mm}
+  .w-reg{width:30mm} .w-ep{width:46mm} .w-cod2{width:38mm} .w-dni2{width:34mm}
+
+  /* Casillas */
+  input[type=checkbox], input[type=radio] { width:15px; height:15px; cursor:pointer; accent-color:#000; margin:0; vertical-align:middle; }
+  table { border-collapse:collapse; }
+  td { border:1px solid #000; padding:4px 8px; }
+  td.chk { width:24px; text-align:center; padding:2px; }
+
+  .solicito-wrap { display:flex; justify-content:center; margin:8px 0 14px; }
+  .solicito-wrap table { font-size:8.5pt; font-weight:700; font-family:Arial, Helvetica, sans-serif; }
+  .solicito-label { font-size:11.5pt; font-weight:700; padding:18px 14px 0 0; }
+
+  .tbl-full { width:100%; font-size:10.5pt; margin-bottom:4px; }
+  .tbl-full td { height:28px; }
+  .tbl-full td.lbl { width:33%; }
+  .detalle input { width:100%; text-align:left; border-bottom:0; }
+
+  h3 { font-size:11pt; margin:10px 0 0; }
+  p { margin:0 0 10px; text-align:justify; }
+  .sub { font-size:10.5pt; margin:6px 0 2px; }
+
+  /* Firma */
+  .firma-bloque { margin-top:22px; display:flex; align-items:flex-end; gap:14px; }
+  .firma-caja { width:112mm; }
+  .firma-img-wrap { height:130px; display:flex; align-items:flex-end; justify-content:center; }
+  .firma-img-wrap img { max-height:126px; max-width:100%; display:none; margin:0 auto; }
+  .firma-linea { border-top:1px solid #000; margin-top:0; }
+  .firma-info { font-size:8pt; font-family:Arial, Helvetica, sans-serif; line-height:1.5; }
+  .firma-info input { font-size:8pt; width:75mm; text-align:left; }
+  .btn-firma { font-size:11px; background:#1565c0; color:#fff; border:0; padding:6px 10px; border-radius:5px; cursor:pointer; margin-bottom:4px; }
+  .btn-firma.quitar { background:#b71c1c; display:none; }
+  .firma-acciones { display:flex; flex-direction:column; align-items:flex-start; }
+  .firma-acciones .tag { font-size:8pt; color:var(--hint); font-style:italic; margin-bottom:3px; }
+  input[type=file] { display:none; }
+
+  .aviso { color:var(--accent); font-weight:700; text-align:center; font-size:11.5pt; margin-top:26px; line-height:1.4; }
+  .fecha-linea { text-align:right; margin-top:18px; }
+
+  .sindicatos { margin:6px 0 12px 12px; }
+  .sindicatos .fila { display:grid; grid-template-columns:62mm 16mm; align-items:center; height:28px; }
+  .sindicatos .par { display:inline-flex; align-items:center; justify-content:flex-start; gap:5px; }
+  .sindicatos .par b { font-weight:400; }
+  .sindicatos input[type=checkbox] { margin:0; }
+  .titulo-solicito { text-align:right; font-weight:700; margin:0 0 14px; font-size:10.5pt; }
+  .destino { font-weight:700; margin-bottom:10px; }
+  .atte { text-align:center; margin:10px 0 0; }
+  .p2 { font-size:10.5pt; }
+
+  @media (max-width: 800px) {
+    .page { width:100%; padding:14px; margin:0 0 10px; }
+    input[type=text] { max-width:100%; }
+  }
+  @page { size:A4; margin:0; }
+  @media print {
+    body { background:#fff; }
+    #toolbar, .btn-firma { display:none !important; }
+    .page { margin:0; box-shadow:none; width:210mm; height:297mm; page-break-after:always; overflow:hidden; }
+    input[type=text]::placeholder { color:transparent; }
+    input[type=text] { color:#000; }
+    .firma-acciones .tag { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <button id="btnGuardar" type="button">💾 Guardar edición</button>
+  <button class="sec" id="btnImprimir" type="button">🖨️ Imprimir / PDF</button>
+  <span>Haz clic en los espacios en blanco para escribir. Las casillas se marcan con un clic.</span>
+  <div id="toast"></div>
+</div>
+
+<!-- ===================== PÁGINA 1: AFILIACIÓN ===================== -->
+<section class="page" id="pagina1">
+  <div class="head">
+    <img class="logo" src="data:image/jpeg;base64,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" alt="Logo SINTRAP">
+    <div class="head-text">
+      <h1>SINTRAP</h1>
+      <p>SINDICATO NACIONAL DE TRABAJADORES PENITENCIARIOS DEL PERÚ RECONOCIDO POR R.D. N° 002-87-INAP/DPN RATIFICADO POR LEY 27556 DEL 21/11/01 DIRECCIÓN: JR. CARABAYA N° 685 – OFICINA N° 222 – CERCADO DE LIMA.<br>TELÉFONO: 956 505 181 –988 692 196 - CORREOS: allancari@inpe.gob.pe y angelllancari@hotmail.com</p>
+    </div>
+  </div>
+
+  <div class="solicito-wrap">
+    <div class="solicito-label">SOLICITO:</div>
+    <table>
+      <tr><td class="chk" style="height:38px;width:48px"><input type="radio" name="solicito" value="afiliacion" title="Marcar si solicita afiliación"></td><td style="width:62mm">AFILIACIÓN AL SINTRAP.</td></tr>
+      <tr><td class="chk" style="height:38px"><input type="radio" name="solicito" value="regularizacion" title="Marcar si solicita regularización"></td><td>REGULARIZACIÓN DE CUOTA SINDICAL A S/. 5.00 SOLES.</td></tr>
+    </table>
+  </div>
+
+  <h3>Señor:</h3>
+  <h3 style="margin-top:0;font-size:11.5pt">Secretario General del Sindicato Nacional de Trabajadores Penitenciarios del Perú – SINTRAP</h3>
+
+  <p style="margin-bottom:6px">Yo, <input type="text" class="w-nombre" name="nombre" placeholder="Nombres y apellidos completos" title="Nombres y apellidos completos">, servidor (a) de carrera del INPE, identificado (a) con DNI N° <input type="text" class="w-dni" name="dni" inputmode="numeric" maxlength="8" placeholder="DNI (8 dígitos)" title="Número de DNI">, Código Institucional N° <input type="text" class="w-cod" name="codigo" placeholder="Código institucional" title="Código institucional">, y teléfono N° <input type="text" class="w-tel" name="telefono" inputmode="tel" placeholder="Teléfono / celular" title="Teléfono o celular"></p>
+
+  <div class="sub"><b>RÉGIMEN LABORAL:</b> (marca con una “x”)</div>
+  <table class="tbl-full">
+    <tr>
+      <td class="lbl">Ley N° 29709</td><td class="chk"><input type="radio" name="regimen" value="29709" title="Ley N° 29709"></td>
+      <td class="lbl">D.L. N° 276</td><td class="chk"><input type="radio" name="regimen" value="276" title="D.L. N° 276"></td>
+      <td class="lbl">D.L. N° 1057</td><td class="chk"><input type="radio" name="regimen" value="1057" title="D.L. N° 1057"></td>
+    </tr>
+  </table>
+
+  <div class="sub"><b>LABORANDO ACTUALMENTE EN:</b> (marca con una “x”)</div>
+  <table class="tbl-full">
+    <tr>
+      <td class="lbl">Sede Central</td><td class="chk"><input type="radio" name="laborando" value="sede" title="Sede Central"></td>
+      <td class="lbl">Oficina Regional</td><td class="chk"><input type="radio" name="laborando" value="regional" title="Oficina Regional"></td>
+      <td class="lbl">Establecimiento</td><td class="chk"><input type="radio" name="laborando" value="establecimiento" title="Establecimiento"></td>
+    </tr>
+    <tr>
+      <td colspan="1">Detalle Ubicación:</td>
+      <td colspan="5" class="detalle"><input type="text" name="detalle_ubicacion" placeholder="Ej.: Oficina Regional Lima / E.P. Lurigancho / Área o dependencia" title="Detalle de la ubicación"></td>
+    </tr>
+  </table>
+
+  <p style="margin-top:16px">Ante Ud. con respeto me presento y expongo:</p>
+
+  <p>Que, acogiéndome al derecho de libertad sindical consagrado en el artículo 28º de la Constitución Política del Perú, los Convenios Internacionales suscritos por el Perú en materia sindical y los Estatutos del SINTRAP.</p>
+
+  <p>Solicito afiliarme al Sindicato Nacional de Trabajadores Penitenciarios del Perú (SINTRAP), acatar sus estatutos, así como respetar los acuerdos que se tomen en los congresos nacionales o en las asambleas nacional de delegados o los acuerdos de la Junta Directiva Nacional e incluso en las asambleas generales de los sindicatos bases, por lo tanto en base a ello autorizo mi descuento por planillas de la cuota sindical ordinaria ascendente a cinco soles (S/ 5.00), aprobado en el VIII Congreso Nacional 2023, así como alguna cuota extraordinaria u ordinaria aprobada en los acuerdos que se tomen en cualquiera de las instancias mencionadas, asimismo solo en caso de pertenecer a algún otro sindicato solicito el cese de mi aporte sindical a dicho sindicato y se priorice mi cuota sindical al SINTRAP a la cual me estoy afiliado.</p>
+
+  <p>Por lo expuesto, ruego Ud. acceder a mi solicitud por ser de derecho.</p>
+
+  <div class="fecha-linea">
+    <input type="text" class="w-lugar" name="f1_lugar" placeholder="Lugar (ciudad)" title="Lugar / ciudad"> , <input type="text" class="w-dia" name="f1_dia" maxlength="2" placeholder="Día" title="Día"> de <input type="text" class="w-mes" name="f1_mes" placeholder="Mes" title="Mes (en letras)"> de 20<input type="text" class="w-anio" name="f1_anio" maxlength="2" placeholder="Año" title="Últimos dos dígitos del año">
+  </div>
+
+  <div class="firma-bloque">
+    <div class="firma-caja">
+      <div class="firma-img-wrap"><img alt="Firma" data-firma="1"></div>
+      <div class="firma-linea"></div>
+      <div class="firma-info">
+        NOMBRE Y APELLIDO: <input type="text" name="f1_nombre_firma" placeholder="Nombre y apellido" title="Nombre y apellido"><br>
+        DNI: <input type="text" name="f1_dni_firma" inputmode="numeric" maxlength="8" placeholder="DNI" title="DNI" style="width:40mm">
+      </div>
+    </div>
+    <div class="firma-acciones">
+      <span class="tag">Firma (JPG o PNG)</span>
+      <button type="button" class="btn-firma" data-subir="1">✍️ Subir firma</button>
+      <button type="button" class="btn-firma quitar" data-quitar="1">✖ Quitar</button>
+      <input type="file" accept="image/png,image/jpeg" data-file="1">
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PÁGINA 2: DESAFILIACIÓN ===================== -->
+<section class="page p2" id="pagina2">
+  <div class="titulo-solicito">SOLICITO: DESAFILIACIÓN DE SINDICATO<br>y/o CESE DE CUOTA SINDICAL</div>
+
+  <div class="destino">SEÑOR(A) JEFE DE LA OFICINA DE RECURSOS HUMANOS DE LA SEDE CENTRAL DEL INSTITUTO NACIONAL PENITENCIARIO</div>
+
+  <p>Yo, <input type="text" style="width:78mm" name="d_nombre" placeholder="Nombres y apellidos completos" title="Nombres y apellidos completos"> con DNI N° <input type="text" class="w-dni2" name="d_dni" inputmode="numeric" maxlength="8" placeholder="DNI (8 dígitos)" title="Número de DNI">, con código laboral N° <input type="text" class="w-cod2" name="d_codigo" placeholder="Código laboral" title="Código laboral">, de régimen laboral <input type="text" class="w-reg" name="d_regimen" placeholder="Ej.: 276, 1057, 29709" title="Régimen laboral">  actualmente laborando en el E.P. <input type="text" class="w-ep" name="d_ep" placeholder="Establecimiento penitenciario" title="Establecimiento penitenciario o dependencia"> ante usted con el debido respeto expongo lo siguiente.</p>
+
+  <p>Que, por convenir a mis intereses laborales, personales y al amparo del artículo N° 28 de la Constitución Política del Perú, Convenios internacionales suscritos con el Perú en Materia Sindical y al amparo a mi libertad sindical de afiliación o desafiliación comunico mi decisión personal de <b>RENUNCIAR</b> al (os) siguientes sindicatos:</p>
+
+  <div class="sindicatos">
+    <div class="fila"><span>1.- SINSECA</span><span class="par"><b></b><input type="checkbox" name="s_sinseca"><b></b></span></div>
+    <div class="fila"><span>2.- SUNTRAP-CAS.</span><span class="par"><b></b><input type="checkbox" name="s_suntrap"><b></b></span></div>
+    <div class="fila"><span>3.- SINTPE-INPE</span><span class="par"><b></b><input type="checkbox" name="s_sintpe"><b></b></span></div>
+    <div class="fila"><span>4.- SINCERPENUL -INPE.</span><span class="par"><b></b><input type="checkbox" name="s_sincerpenul"><b></b></span></div>
+    <div class="fila"><span>5.- SINPROSA</span><span class="par"><b></b><input type="checkbox" name="s_sinprosa"><b></b></span></div>
+  </div>
+
+  <p>Mediante la cual conforme a la norma aludida surte los efectos desde la fecha de presentación de la presente solicitud, a efectos que no me descuente las cuotas sindicales, por alguno de estos cinco sindicatos en mención.</p>
+
+  <p><b>POR LO EXPUESTO:</b><br>Señora jefa de la Oficina de Recursos Humanos de la Sede Central -Inpe, solicito acceder a mi petición por ser de justicia ante la ley.</p>
+
+  <p class="atte"><b>ATENTAMENTE.</b></p>
+
+  <div class="fecha-linea" style="text-align:left;margin-top:24px">
+    <input type="text" class="w-lugar" name="f2_lugar" placeholder="Lugar (ciudad)" title="Lugar / ciudad">, <input type="text" class="w-dia" name="f2_dia" maxlength="2" placeholder="Día" title="Día"> de <input type="text" class="w-mes" name="f2_mes" placeholder="Mes" title="Mes (en letras)"> 20<input type="text" class="w-anio" name="f2_anio" maxlength="2" placeholder="Año" title="Últimos dos dígitos del año">
+  </div>
+
+  <div class="firma-bloque" style="margin-top:30px">
+    <div class="firma-caja" style="width:80mm">
+      <div class="firma-img-wrap"><img alt="Firma" data-firma="2"></div>
+      <div class="firma-linea"></div>
+      <div class="firma-info">
+        NOMBRES: <input type="text" name="f2_nombre_firma" placeholder="Nombres y apellidos" title="Nombres y apellidos" style="width:55mm"><br>
+        DNI: <input type="text" name="f2_dni_firma" inputmode="numeric" maxlength="8" placeholder="DNI" title="DNI" style="width:40mm">
+      </div>
+    </div>
+    <div class="firma-acciones">
+      <span class="tag">Firma (JPG o PNG)</span>
+      <button type="button" class="btn-firma" data-subir="2">✍️ Subir firma</button>
+      <button type="button" class="btn-firma quitar" data-quitar="2">✖ Quitar</button>
+      <input type="file" accept="image/png,image/jpeg" data-file="2">
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  var SERVER_SAVE = false; // en la versión .php se cambia a true
+
+  /* ---------- Firmas ---------- */
+  function setFirma(n, src) {
+    var img = document.querySelector('img[data-firma="' + n + '"]');
+    var quitar = document.querySelector('[data-quitar="' + n + '"]');
+    if (src) { img.src = src; img.style.display = 'block'; quitar.style.display = 'inline-block'; }
+    else { img.removeAttribute('src'); img.style.display = 'none'; quitar.style.display = 'none'; }
+  }
+  // Restaurar estado si el archivo se guardó con firma ya cargada
+  [1, 2].forEach(function (n) {
+    var img = document.querySelector('img[data-firma="' + n + '"]');
+    if (img.getAttribute('src')) setFirma(n, img.getAttribute('src'));
+  });
+
+  document.querySelectorAll('[data-subir]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelector('[data-file="' + b.dataset.subir + '"]').click();
+    });
+  });
+  document.querySelectorAll('[data-quitar]').forEach(function (b) {
+    b.addEventListener('click', function () { setFirma(b.dataset.quitar, null); });
+  });
+  document.querySelectorAll('input[type=file]').forEach(function (f) {
+    f.addEventListener('change', function () {
+      var file = f.files[0];
+      if (!file) return;
+      if (['image/png', 'image/jpeg'].indexOf(file.type) === -1) {
+        alert('Solo se permiten imágenes JPEG o PNG.'); f.value = ''; return;
+      }
+      if (file.size > 3 * 1024 * 1024) { alert('La imagen no debe superar 3 MB.'); f.value = ''; return; }
+      var r = new FileReader();
+      r.onload = function (e) { setFirma(f.dataset.file, e.target.result); };
+      r.readAsDataURL(file);
+      f.value = '';
+    });
+  });
+
+  /* ---------- Solo números en DNI / teléfono ---------- */
+  document.querySelectorAll('input[inputmode=numeric], input[inputmode=tel]').forEach(function (i) {
+    i.addEventListener('input', function () { i.value = i.value.replace(/[^\d+ ]/g, ''); });
+  });
+
+  /* ---------- Guardar ---------- */
+  function toast(msg) {
+    var t = document.getElementById('toast'); t.textContent = msg;
+    setTimeout(function () { t.textContent = ''; }, 5000);
+  }
+
+  function snapshot() {
+    // Fija los valores actuales dentro del HTML para que se conserven al reabrir
+    document.querySelectorAll('input[type=text]').forEach(function (i) { i.setAttribute('value', i.value); });
+    document.querySelectorAll('input[type=checkbox], input[type=radio]').forEach(function (c) {
+      if (c.checked) c.setAttribute('checked', 'checked'); else c.removeAttribute('checked');
+    });
+    return '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  }
+
+  function descargar(html) {
+    var nombre = (document.querySelector('[name=nombre]').value || document.querySelector('[name=d_nombre]').value || 'formato')
+                  .trim().replace(/\s+/g, '_').replace(/[^\w\-]/g, '') || 'formato';
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Formato_SINTRAP_' + nombre + '.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+  }
+
+  document.getElementById('btnGuardar').addEventListener('click', function () {
+    var html = snapshot();
+    if (SERVER_SAVE) {
+      var fd = new FormData();
+      fd.append('action', 'guardar'); fd.append('html', html);
+      fetch(location.pathname, { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j.ok) toast('✔ Guardado en el servidor: ' + j.archivo);
+          else { toast('No se pudo guardar en el servidor; se descargó una copia.'); }
+          descargar(html);
+        })
+        .catch(function () { toast('Sin servidor: se descargó una copia.'); descargar(html); });
+    } else {
+      descargar(html);
+      toast('✔ Archivo descargado con tu edición.');
+    }
+  });
+
+  document.getElementById('btnImprimir').addEventListener('click', function () { window.print(); });
+})();
+</script>
+</body>
+</html>
