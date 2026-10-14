@@ -13,8 +13,9 @@
   #toolbar { position:sticky; top:0; z-index:10; background:#222; color:#fff; padding:10px 16px;
              display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   #toolbar button { background:#2e7d32; color:#fff; border:0; padding:9px 16px; border-radius:6px; font-size:14px; cursor:pointer; }
-  #toolbar button.sec { background:#555; }
+
   #toolbar button:hover { filter:brightness(1.15); }
+  #toolbar button:disabled { cursor:wait; opacity:.7; }
   #toolbar span { font-size:13px; opacity:.85; }
   #toast { margin-left:auto; font-size:13px; color:#9be29b; }
 
@@ -97,17 +98,23 @@
     input[type=text] { color:#000; }
     .firma-acciones .tag { display:none; }
   }
+
+  /* Ajustes temporales mientras se compone el archivo descargable. */
+  .generando-pdf .firma-acciones { display:none !important; }
+  .generando-pdf .page { width:210mm; height:297mm; min-height:297mm; margin:0; box-shadow:none;
+                          overflow:hidden; break-after:page; page-break-after:always; }
+  .generando-pdf .page:last-child { break-after:auto; page-break-after:auto; }
 </style>
 </head>
 <body>
 
 <div id="toolbar">
-  <button id="btnGuardar" type="button">💾 Guardar edición</button>
-  <button class="sec" id="btnImprimir" type="button">🖨️ Imprimir / PDF</button>
+  <button class="sec" id="btnDescargarPdf" type="button">⬇️ Descargar PDF</button>
   <span>Haz clic en los espacios en blanco para escribir. Las casillas se marcan con un clic.</span>
   <div id="toast"></div>
 </div>
 
+<main id="formulario">
 <!-- ===================== PÁGINA 1: AFILIACIÓN ===================== -->
 <section class="page" id="pagina1">
   <div class="head">
@@ -228,7 +235,9 @@
     </div>
   </div>
 </section>
+</main>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 (function () {
   var SERVER_SAVE = false; // en la versión .php se cambia a true
@@ -289,37 +298,36 @@
     return '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
   }
 
-  function descargar(html) {
-    var nombre = (document.querySelector('[name=nombre]').value || document.querySelector('[name=d_nombre]').value || 'formato')
-                  .trim().replace(/\s+/g, '_').replace(/[^\w\-]/g, '') || 'formato';
-    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'Formato_SINTRAP_' + nombre + '.html';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
-  }
-
-  document.getElementById('btnGuardar').addEventListener('click', function () {
-    var html = snapshot();
-    if (SERVER_SAVE) {
-      var fd = new FormData();
-      fd.append('action', 'guardar'); fd.append('html', html);
-      fetch(location.pathname, { method: 'POST', body: fd })
-        .then(function (r) { return r.json(); })
-        .then(function (j) {
-          if (j.ok) toast('✔ Guardado en el servidor: ' + j.archivo);
-          else { toast('No se pudo guardar en el servidor; se descargó una copia.'); }
-          descargar(html);
-        })
-        .catch(function () { toast('Sin servidor: se descargó una copia.'); descargar(html); });
-    } else {
-      descargar(html);
-      toast('✔ Archivo descargado con tu edición.');
+  /* ---------- Descargar PDF ---------- */
+  document.getElementById('btnDescargarPdf').addEventListener('click', function () {
+    var boton = this;
+    if (!window.html2pdf) {
+      toast('No se pudo cargar el generador de PDF. Verifica tu conexión e inténtalo nuevamente.');
+      return;
     }
-  });
 
-  document.getElementById('btnImprimir').addEventListener('click', function () { window.print(); });
+    boton.disabled = true;
+    boton.textContent = 'Generando PDF…';
+    document.body.classList.add('generando-pdf');
+
+    var opciones = {
+      margin: 0,
+      filename: 'formato-afiliacion-sintrap.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] }
+    };
+
+    html2pdf().set(opciones).from(document.getElementById('formulario')).save()
+      .then(function () { toast('PDF descargado correctamente.'); })
+      .catch(function () { toast('No se pudo crear el PDF. Inténtalo nuevamente.'); })
+      .then(function () {
+        document.body.classList.remove('generando-pdf');
+        boton.disabled = false;
+        boton.textContent = '⬇️ Descargar PDF';
+      });
+  });
 })();
 </script>
 </body>
