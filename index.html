@@ -102,8 +102,11 @@
   /* Ajustes temporales mientras se compone el archivo descargable. */
   .generando-pdf .firma-acciones { display:none !important; }
   .generando-pdf .page { width:210mm; height:297mm; min-height:297mm; margin:0; box-shadow:none;
-                          overflow:hidden; break-after:page; page-break-after:always; }
-  .generando-pdf .page:last-child { break-after:auto; page-break-after:auto; }
+                          overflow:hidden; }
+  /* La segunda hoja reserva menos alto para la firma, para acercar sus datos finales. */
+  #pagina2 .firma-bloque { margin-top:10px !important; }
+  #pagina2 .firma-img-wrap { height:80px; }
+  #pagina2 .firma-img-wrap img { max-height:76px; }
 </style>
 </head>
 <body>
@@ -187,6 +190,9 @@
       <button type="button" class="btn-firma quitar" data-quitar="1">✖ Quitar</button>
       <input type="file" accept="image/png,image/jpeg" data-file="1">
     </div>
+  </div>
+  <div style="text-align: center; color: red; font-weight: bold;">
+      <p></p>REMITIR EL PRESENTE FORMATO DEBIDAMENTE LLENADO Y FORMADO VÍA WHATSAPP AL TELÉFONO 956505181
   </div>
 </section>
 
@@ -316,7 +322,8 @@
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'] }
+      // Las dos secciones ya miden A4; el corte automático evita una hoja intermedia vacía.
+      pagebreak: { mode: [] }
     };
 
     html2pdf().set(opciones).from(document.getElementById('formulario')).save()
